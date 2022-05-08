@@ -1,7 +1,9 @@
 import pandas as pd
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def analyze_data(data):
@@ -12,7 +14,11 @@ def analyze_data(data):
 
 
 def preprocess(data):
-    pass
+    standard_scaler = StandardScaler()
+    data = data.fillna({col : np.mean(data[col]) for col in data})
+    y = data["target"]
+    X = data.drop("target",axis=1)
+    return standard_scaler.fit_transform(X),y
 
 
 def show_roc_curve(y_true, preds):
@@ -43,14 +49,13 @@ def get_numeric_stats(df: DataFrame):
 def get_feature_hist(df: DataFrame):
     for col in df:
         plt.hist(df[col])
-        plt.legend()
         plt.show()
 
 
 if __name__ == "__main__":
     data = pd.read_csv('heart.csv')
-    analyze_data(data)
-    # x, y = preprocess(data)
+    # analyze_data(data)
+    x, y = preprocess(data)
     # X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=11)
     # weights = calculate_class_weights(y)
 
