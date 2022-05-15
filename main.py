@@ -56,7 +56,7 @@ if __name__ == "__main__":
     data = pd.read_csv('heart.csv')
     # analyze_data(data)
     x, y = preprocess(data)
-    # X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=11)
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=11)
     # weights = calculate_class_weights(y)
 
     # implement here the experiments for task 4
