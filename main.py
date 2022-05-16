@@ -18,7 +18,8 @@ def preprocess(data):
     data = data.fillna({col : np.mean(data[col]) for col in data})
     y = data["target"]
     X = data.drop("target",axis=1)
-    return standard_scaler.fit_transform(X),y
+    scaled_data = standard_scaler.fit_transform(X)
+    return pd.DataFrame(scaled_data,index=X.index,columns=X.columns),y
 
 
 def show_roc_curve(y_true, preds):
@@ -56,7 +57,7 @@ if __name__ == "__main__":
     data = pd.read_csv('heart.csv')
     # analyze_data(data)
     x, y = preprocess(data)
-    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=11)
+    # X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=11)
     # weights = calculate_class_weights(y)
 
     # implement here the experiments for task 4
