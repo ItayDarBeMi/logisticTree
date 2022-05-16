@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from Node import Node
 
+
 def analyze_data(data):
     get_pie_chart(data)
     get_null_values(data)
@@ -15,11 +16,11 @@ def analyze_data(data):
 
 def preprocess(data):
     standard_scaler = StandardScaler()
-    data = data.fillna({col : np.mean(data[col]) for col in data})
+    data = data.fillna({col: np.mean(data[col]) for col in data})
     y = data["target"]
-    X = data.drop("target",axis=1)
+    X = data.drop("target", axis=1)
     scaled_data = standard_scaler.fit_transform(X)
-    return scaled_data,y
+    return scaled_data, y
 
 
 def show_roc_curve(y_true, preds):
@@ -53,14 +54,26 @@ def get_feature_hist(df: DataFrame):
         plt.show()
 
 
+def traverse_tree(root: Node):
+    if root:
+        traverse_tree(root.left_node)
+        print(root.best_split)
+        traverse_tree(root.right_node)
+
+
 if __name__ == "__main__":
     data = pd.read_csv('heart.csv')
     # analyze_data(data)
     x, y = preprocess(data)
-    n = Node(x,y)
-    idx_left = np.where(x[:, 0] <= 0.00234)[0]
-    idx_right = np.delete(np.arange(0, len(x)), idx_left)
-    print(n.get_gini_gain(idx_left,idx_right))
+    root = Node(x, y)
+    root.grow_tree()
+    traverse_tree(root)
+
+    # for index in range(x.shape[1]):
+    #     print(n.find_best_split(index).right_index)
+    # idx_left = np.where(x[:, 0] <= 0.00234)[0]
+    # idx_right = np.delete(np.arange(0, len(x)), idx_left)
+    # print(n.get_gini_gain(idx_left,idx_right))
 
     # X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=11)
     # weights = calculate_class_weights(y)

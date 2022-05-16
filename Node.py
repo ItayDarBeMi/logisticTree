@@ -4,6 +4,17 @@ from typing import Union, List
 from sklearn.linear_model import LogisticRegression
 from pandas import DataFrame
 from numpy import ndarray
+from dataclasses import dataclass
+
+
+@dataclass
+class BestSplit:
+    best_gini: int
+    left_index: ndarray
+    right_index: ndarray
+    split_value: np.float
+    feature: int
+    all_leaves: bool = False
 
 
 class Node:
@@ -24,13 +35,75 @@ class Node:
         self.criteria = "gini"
         self.num_samples = x.shape[0]
         self.gini = Node.gini_impurity(*self.count_classes)
+        self.pred: Union[bool, int] = True
+        self.fit_model(self.x, self.y)
+        self.best_split: Union[BestSplit,None] = None
 
     def grow_tree(self):
-        if self.is_root:
-            pass
+        best_split = BestSplit(
+            best_gini=-1,
+            left_index=None,
+            right_index=None,
+            split_value=0,
+            feature=-1
+        )
+        for feature in range(self.x.shape[1]):
+            feature_best_split = self.find_best_split(feature)
+            if feature_best_split.best_gini > best_split.best_gini:
+                best_split = feature_best_split
+
+        if best_split.all_leaves or best_split.right_index is None or best_split.left_index is None:
+            return
+        try:
+            right_x = self.x[best_split.right_index]
+            right_y = self.y[best_split.right_index].reset_index(drop=True)
+            left_x = self.x[best_split.left_index]
+            left_y = self.y[best_split.left_index].reset_index(drop=True)
+        except Exception as e:
+            print(e)
+            return
+
+        self.best_split = best_split
+        if len(right_x) > self.min_leaf and len(left_x) > self.min_leaf:
+            self.right_node = Node.init_node(right_x, right_y, self.depth + 1)
+            self.left_node = Node.init_node(left_x, left_y, self.depth + 1)
+            self.right_node.grow_tree()
+            self.left_node.grow_tree()
+        elif len(right_x) <= self.min_leaf < len(left_x):
+            self.left_node = Node.init_node(left_x, left_y, self.depth + 1)
+            self.left_node.grow_tree()
+        elif len(right_x) > self.min_leaf >= len(left_x):
+            self.right_node = Node.init_node(right_x, right_y, self.depth + 1)
+            self.right_node.grow_tree()
+        else:
+            return
 
     def find_best_split(self, var_idx):
-        pass
+        best_split = BestSplit(
+            best_gini=0,
+            left_index=None,
+            right_index=None,
+            split_value=0,
+            feature=var_idx
+        )
+        is_min_leaves = 0
+        values = self.x[:, var_idx]
+        for value in values:
+            left_index = np.where(self.x[:, var_idx] <= value)[0]
+            right_index = np.delete(np.arange(0, self.num_samples), left_index)
+            if not self.is_valid(left_index, right_index):
+                is_min_leaves += 1
+                continue
+            gini_index = self.get_gini_gain(left_index, right_index)
+            if gini_index > best_split.best_gini:
+                best_split.best_gini = gini_index
+                best_split.split_value = value
+                best_split.right_index = right_index
+                best_split.left_index = left_index
+
+        if is_min_leaves == len(values):
+            best_split.all_leaves = True
+        return best_split
 
     def get_gini_gain(self, lhs: List[int], rhs: List[int]):
         left_values = self.y[lhs]
@@ -42,7 +115,7 @@ class Node:
         y1_right, y2_right = self.get_count_of_classes(right_values)
         left_impurity = Node.gini_impurity(y1_left, y2_left)
         right_impurity = Node.gini_impurity(y1_right, y2_right)
-        return self.gini - (p_left*left_impurity + p_right*right_impurity)
+        return self.gini - (p_left * left_impurity + p_right * right_impurity)
 
     def is_leaf(self) -> bool:
         return True if (not self.left_node and not self.right_node) else False
@@ -54,7 +127,30 @@ class Node:
         pass
 
     def get_count_of_classes(self, y: ndarray):
-        return tuple(y[y == class_count].count() for class_count in np.unique(y))
+        res = []
+        for label in np.unique(y):
+            count_label = y[y == label].count()
+            res.append(count_label)
+        if len(res) == 1:
+            res.append(0)
+        return res
+
+    def is_valid(self, l, r):
+        if not all([len(r) > self.min_leaf,
+                    len(l) >= self.min_leaf]):
+            return False
+        return True
+
+    def fit_model(self, x, y):
+        labels = np.unique(y)
+        if len(labels) == 1:
+            self.pred = labels[0]
+            return
+        self.model.fit(x, y)
+
+    @staticmethod
+    def init_node(x, y, depth):
+        return Node(x, y, depth=depth, is_root=False)
 
     @staticmethod
     def gini_impurity(y1_count, y2_count) -> float:
