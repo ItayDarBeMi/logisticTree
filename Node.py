@@ -20,10 +20,10 @@ class Node:
         self.right_node: Union[Node, None] = None
         self.left_node: Union[Node, None] = None
         self.model = LogisticRegression()
-        self.count_classes = {class_count: y[y == class_count].count() for class_count in np.unique(y)}
+        self.count_classes = self.get_count_of_classes(self.y)
         self.criteria = "gini"
         self.num_samples = x.shape[0]
-        self.gini = None
+        self.gini = Node.gini_impurity(*self.count_classes)
 
     def grow_tree(self):
         if self.is_root:
@@ -35,8 +35,9 @@ class Node:
     def get_gini_gain(self, lhs: List[int], rhs: List[int]):
         left_values = self.y[lhs]
         right_values = self.y[rhs]
-        p_left = len(left_values) / (len(left_values) + len(right_values))
-        p_right = len(right_values) / (len(left_values) + len(right_values))
+        total = (len(left_values) + len(right_values))
+        p_left = len(left_values) / total
+        p_right = len(right_values) / total
         y1_left, y2_left = self.get_count_of_classes(left_values)
         y1_right, y2_right = self.get_count_of_classes(right_values)
         left_impurity = Node.gini_impurity(y1_left, y2_left)
@@ -53,7 +54,7 @@ class Node:
         pass
 
     def get_count_of_classes(self, y: ndarray):
-        return (y[y == class_count].count() for class_count in np.unique(y))
+        return tuple(y[y == class_count].count() for class_count in np.unique(y))
 
     @staticmethod
     def gini_impurity(y1_count, y2_count) -> float:
@@ -63,6 +64,4 @@ class Node:
 
 
 if __name__ == '__main__':
-    node = Node([1, 2, 3], [1, 2, 4])
-    node.left_node = Node([1, 2, ], [12, 3])
-    print(Node.gini_impurity(**node.count_classes))
+    pass

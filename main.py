@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import numpy as np
-
+from Node import Node
 
 def analyze_data(data):
     get_pie_chart(data)
@@ -19,7 +19,7 @@ def preprocess(data):
     y = data["target"]
     X = data.drop("target",axis=1)
     scaled_data = standard_scaler.fit_transform(X)
-    return pd.DataFrame(scaled_data,index=X.index,columns=X.columns),y
+    return scaled_data,y
 
 
 def show_roc_curve(y_true, preds):
@@ -57,6 +57,11 @@ if __name__ == "__main__":
     data = pd.read_csv('heart.csv')
     # analyze_data(data)
     x, y = preprocess(data)
+    n = Node(x,y)
+    idx_left = np.where(x[:, 0] <= 0.00234)[0]
+    idx_right = np.delete(np.arange(0, len(x)), idx_left)
+    print(n.get_gini_gain(idx_left,idx_right))
+
     # X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=11)
     # weights = calculate_class_weights(y)
 
