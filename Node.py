@@ -16,6 +16,7 @@ class Node:
         if class_weight:
             self.class_weight = class_weight
         self.max_depth = max_depth
+        ## this is change
         self.depth = depth
         self.right_node: Union[Node, None] = None
         self.left_node: Union[Node, None] = None
