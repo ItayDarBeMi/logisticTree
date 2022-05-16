@@ -5,6 +5,7 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import numpy as np
 from Node import Node
+from sklearn.metrics import accuracy_score
 
 
 def analyze_data(data):
@@ -65,17 +66,11 @@ if __name__ == "__main__":
     data = pd.read_csv('heart.csv')
     # analyze_data(data)
     x, y = preprocess(data)
-    root = Node(x, y)
+    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+    root = Node(X_train, y_train.reset_index(drop=True))
     root.grow_tree()
-    traverse_tree(root)
+    y_pred = root.predict(X_test)
+    print(accuracy_score(y_test,y_pred))
 
-    # for index in range(x.shape[1]):
-    #     print(n.find_best_split(index).right_index)
-    # idx_left = np.where(x[:, 0] <= 0.00234)[0]
-    # idx_right = np.delete(np.arange(0, len(x)), idx_left)
-    # print(n.get_gini_gain(idx_left,idx_right))
-
-    # X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=11)
-    # weights = calculate_class_weights(y)
 
     # implement here the experiments for task 4

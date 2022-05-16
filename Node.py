@@ -19,11 +19,10 @@ class BestSplit:
 
 class Node:
 
-    def __init__(self, x: DataFrame, y: ndarray, min_leaf=5, class_weight=None, max_depth=5, depth=0, is_root=False):
+    def __init__(self, x: DataFrame, y: ndarray, min_leaf=5, class_weight=None, max_depth=5, depth=0):
         self.x = x
         self.y = y
         self.min_leaf = min_leaf
-        self.is_root = is_root
         if class_weight:
             self.class_weight = class_weight
         self.max_depth = max_depth
@@ -37,7 +36,7 @@ class Node:
         self.gini = Node.gini_impurity(*self.count_classes)
         self.pred: Union[bool, int] = True
         self.fit_model(self.x, self.y)
-        self.best_split: Union[BestSplit,None] = None
+        self.best_split: Union[BestSplit, None] = None
 
     def grow_tree(self):
         best_split = BestSplit(
@@ -52,7 +51,7 @@ class Node:
             if feature_best_split.best_gini > best_split.best_gini:
                 best_split = feature_best_split
 
-        if best_split.all_leaves or best_split.right_index is None or best_split.left_index is None:
+        if best_split.all_leaves or (best_split.right_index is None) or best_split.left_index is None or self.depth+1 > self.max_depth:
             return
         try:
             right_x = self.x[best_split.right_index]
@@ -121,10 +120,23 @@ class Node:
         return True if (not self.left_node and not self.right_node) else False
 
     def predict(self, x):
-        pass
+        pred = []
+        for xi in x:
+            pred.append(self.predict_row(xi))
+        return pred
 
     def predict_row(self, xi):
-        pass
+        root = self
+        while not root.is_leaf():
+            if xi[root.best_split.feature] <= root.best_split.split_value:
+                if not root.left_node:
+                    break
+                root = root.left_node
+            else:
+                if not root.right_node:
+                    break
+                root = root.right_node
+        return [self.pred] if not self.model else self.model.predict(xi.reshape(1, -1))
 
     def get_count_of_classes(self, y: ndarray):
         res = []
@@ -145,19 +157,16 @@ class Node:
         labels = np.unique(y)
         if len(labels) == 1:
             self.pred = labels[0]
+            self.model = None
             return
         self.model.fit(x, y)
 
     @staticmethod
     def init_node(x, y, depth):
-        return Node(x, y, depth=depth, is_root=False)
+        return Node(x, y, depth=depth+1)
 
     @staticmethod
     def gini_impurity(y1_count, y2_count) -> float:
         p_y1 = y1_count / (y1_count + y2_count)
         p_y2 = y2_count / (y1_count + y2_count)
         return 1 - (p_y1 ** 2 + p_y2 ** 2)
-
-
-if __name__ == '__main__':
-    pass
