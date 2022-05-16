@@ -16,7 +16,6 @@ class Node:
         if class_weight:
             self.class_weight = class_weight
         self.max_depth = max_depth
-        ## this is change
         self.depth = depth
         self.right_node: Union[Node, None] = None
         self.left_node: Union[Node, None] = None
@@ -24,6 +23,7 @@ class Node:
         self.count_classes = {class_count: y[y == class_count].count() for class_count in np.unique(y)}
         self.criteria = "gini"
         self.num_samples = x.shape[0]
+        self.gini = None
 
     def grow_tree(self):
         if self.is_root:
@@ -35,7 +35,13 @@ class Node:
     def get_gini_gain(self, lhs: List[int], rhs: List[int]):
         left_values = self.y[lhs]
         right_values = self.y[rhs]
-        p_left = None
+        p_left = len(left_values) / (len(left_values) + len(right_values))
+        p_right = len(right_values) / (len(left_values) + len(right_values))
+        y1_left, y2_left = self.get_count_of_classes(left_values)
+        y1_right, y2_right = self.get_count_of_classes(right_values)
+        left_impurity = Node.gini_impurity(y1_left, y2_left)
+        right_impurity = Node.gini_impurity(y1_right, y2_right)
+        return self.gini - (p_left*left_impurity + p_right*right_impurity)
 
     def is_leaf(self) -> bool:
         return True if (not self.left_node and not self.right_node) else False
@@ -47,7 +53,7 @@ class Node:
         pass
 
     def get_count_of_classes(self, y: ndarray):
-        pass
+        return (y[y == class_count].count() for class_count in np.unique(y))
 
     @staticmethod
     def gini_impurity(y1_count, y2_count) -> float:
