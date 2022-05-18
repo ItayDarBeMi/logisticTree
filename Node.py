@@ -31,7 +31,6 @@ class Node:
         self.left_node: Union[Node, None] = None
         self.model = LogisticRegression()
         self.count_classes = self.get_count_of_classes(self.y)
-        self.criteria = "gini"
         self.num_samples = x.shape[0]
         self.gini = Node.gini_impurity(*self.count_classes)
         self.pred: Union[bool, int] = True
@@ -39,13 +38,7 @@ class Node:
         self.best_split: Union[BestSplit, None] = None
 
     def grow_tree(self):
-        best_split = BestSplit(
-            best_gini=-1,
-            left_index=None,
-            right_index=None,
-            split_value=0,
-            feature=-1
-        )
+        best_split = Node.init_best_split(best_gini=-1,feature=-1)
         for feature in range(self.x.shape[1]):
             feature_best_split = self.find_best_split(feature)
             if feature_best_split.best_gini > best_split.best_gini:
@@ -63,28 +56,13 @@ class Node:
             return
 
         self.best_split = best_split
-        if len(right_x) > self.min_leaf and len(left_x) > self.min_leaf:
-            self.right_node = Node.init_node(right_x, right_y, self.depth + 1)
-            self.left_node = Node.init_node(left_x, left_y, self.depth + 1)
-            self.right_node.grow_tree()
-            self.left_node.grow_tree()
-        elif len(right_x) <= self.min_leaf < len(left_x):
-            self.left_node = Node.init_node(left_x, left_y, self.depth + 1)
-            self.left_node.grow_tree()
-        elif len(right_x) > self.min_leaf >= len(left_x):
-            self.right_node = Node.init_node(right_x, right_y, self.depth + 1)
-            self.right_node.grow_tree()
-        else:
-            return
+        self.right_node = Node.init_node(right_x, right_y, self.depth + 1)
+        self.left_node = Node.init_node(left_x, left_y, self.depth + 1)
+        self.right_node.grow_tree()
+        self.left_node.grow_tree()
 
     def find_best_split(self, var_idx):
-        best_split = BestSplit(
-            best_gini=0,
-            left_index=None,
-            right_index=None,
-            split_value=0,
-            feature=var_idx
-        )
+        best_split = Node.init_best_split(0,var_idx)
         is_min_leaves = 0
         values = self.x[:, var_idx]
         for value in values:
@@ -148,7 +126,7 @@ class Node:
         return res
 
     def is_valid(self, l, r):
-        if not all([len(r) > self.min_leaf,
+        if not all([len(r) >= self.min_leaf,
                     len(l) >= self.min_leaf]):
             return False
         return True
@@ -164,6 +142,16 @@ class Node:
     @staticmethod
     def init_node(x, y, depth):
         return Node(x, y, depth=depth+1)
+
+    @staticmethod
+    def init_best_split(best_gini,feature):
+        return BestSplit(
+            best_gini=best_gini,
+            left_index=None,
+            right_index=None,
+            split_value=0,
+            feature=feature
+        )
 
     @staticmethod
     def gini_impurity(y1_count, y2_count) -> float:
