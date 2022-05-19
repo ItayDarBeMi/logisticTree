@@ -30,7 +30,16 @@ def preprocess(data):
 
 
 def show_roc_curve(path_to_results):
-    pass
+    with open(path_to_results,'r') as f:
+        roc = json.loads(f.read())
+    for conf in roc['roc']:
+        mean_fpr = np.mean([i[0] for i in roc['roc'][conf]],axis=0)
+        mean_tpr = np.mean([i[1] for i in roc['roc'][conf]],axis=0)
+        plt.plot(mean_fpr,mean_tpr)
+    plt.plot([0, 1], [0, 1], "k--")
+    plt.ylabel("True Positive Rate")
+    plt.xlabel("False Positive Rate")
+    plt.show()
 
 
 
@@ -79,7 +88,7 @@ def cross_validation(x,y):
         roc_auc[i+1] = []
         auc_dic[i+1] = []
         clf = LogisticModelTree(min_leaf=conf["min_leaf"],max_depth=conf.get("max_depth"))
-        kf = KFold(n_splits=10, random_state=42, shuffle=True)
+        kf = KFold(n_splits=10, shuffle=True)
         folds = kf.split(x, y)
         for fold in tqdm(folds):
             x_train = x[fold[0]]
@@ -126,6 +135,7 @@ if __name__ == "__main__":
             json.dump(ret,results)
     except Exception as e:
         print(e)
+    # show_roc_curve("/Users/itayd/PycharmProjects/logisticTree/ruc_auc.json")
 
 
 
