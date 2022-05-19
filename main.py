@@ -9,8 +9,14 @@ from sklearn.metrics import accuracy_score
 from LogisticModelTree import LogisticModelTree
 from sklearn.model_selection import cross_val_score, KFold
 import json
-from sklearn.metrics import roc_auc_score,auc,roc_curve
+from sklearn.metrics import roc_auc_score, auc, roc_curve
 from tqdm import tqdm
+
+CONF = {
+        '1': {"min_leaf": 3, "max_depth": 3},
+        '2': {"min_leaf": 5, "max_depth": 5},
+        '3': {"min_leaf": 10, "max_depth": 10}
+        }
 
 
 def analyze_data(data):
@@ -29,18 +35,24 @@ def preprocess(data):
     return scaled_data, y
 
 
-def show_roc_curve(path_to_results):
-    with open(path_to_results,'r') as f:
-        roc = json.loads(f.read())
-    for conf in roc['roc']:
-        mean_fpr = np.mean([i[0] for i in roc['roc'][conf]],axis=0)
-        mean_tpr = np.mean([i[1] for i in roc['roc'][conf]],axis=0)
-        plt.plot(mean_fpr,mean_tpr)
+def plot_roc_curve_per_conf(roc, auc, conf):
+    mean_fpr = np.mean([i[0] for i in roc[conf]], axis=0)
+    mean_tpr = np.mean([i[1] for i in roc[conf]], axis=0)
+    mean_auc = np.mean(auc[conf])
+    plt.plot(mean_fpr, mean_tpr, label=f"ROC Curve(area={round(mean_auc,5)})")
     plt.plot([0, 1], [0, 1], "k--")
     plt.ylabel("True Positive Rate")
     plt.xlabel("False Positive Rate")
+    plt.title(f"Roc Auc Curve for - max_depth={CONF[conf]['max_depth']} min_leaves={CONF[conf]['min_leaf']}")
+    plt.legend(loc=4)
     plt.show()
 
+
+def show_roc_curve(path_to_results):
+    with open(path_to_results, 'r') as f:
+        roc = json.loads(f.read())
+    for conf in roc['roc']:
+        plot_roc_curve_per_conf(roc['roc'], roc['auc'], conf)
 
 
 # bonus
@@ -77,17 +89,17 @@ def traverse_tree(root: Node):
         traverse_tree(root.right_node)
 
 
-def cross_validation(x,y):
-    conf_2 = {"min_leaf":3,"max_depth":3}
-    conf_1 = {"min_leaf":5,"max_depth":5}
-    conf_3 = {"min_leaf":10,"max_depth":10}
-    confs = [conf_2,conf_1,conf_3]
+def cross_validation(x, y):
+    conf_2 = {"min_leaf": 3, "max_depth": 3}
+    conf_1 = {"min_leaf": 5, "max_depth": 5}
+    conf_3 = {"min_leaf": 10, "max_depth": 10}
+    confs = [conf_2, conf_1, conf_3]
     roc_auc = dict()
     auc_dic = dict()
-    for i,conf in tqdm(enumerate(confs)):
-        roc_auc[i+1] = []
-        auc_dic[i+1] = []
-        clf = LogisticModelTree(min_leaf=conf["min_leaf"],max_depth=conf.get("max_depth"))
+    for i, conf in tqdm(enumerate(confs)):
+        roc_auc[i + 1] = []
+        auc_dic[i + 1] = []
+        clf = LogisticModelTree(min_leaf=conf["min_leaf"], max_depth=conf.get("max_depth"))
         kf = KFold(n_splits=10, shuffle=True)
         folds = kf.split(x, y)
         for fold in tqdm(folds):
@@ -95,16 +107,15 @@ def cross_validation(x,y):
             y_train = y[fold[0]]
             x_test = x[fold[1]]
             y_test = y[fold[1]]
-            clf.fit(x_train,y_train.reset_index(drop=True))
+            clf.fit(x_train, y_train.reset_index(drop=True))
             y_pred = clf.predict(x_test)
-            fpr, tpr, _ = roc_curve(y_test,y_pred)
-            auc_dic[i+1].append(auc(fpr,tpr))
-            roc_auc[i+1].append((fpr.tolist(),tpr.tolist()))
+            fpr, tpr, _ = roc_curve(y_test, y_pred)
+            auc_dic[i + 1].append(auc(fpr, tpr))
+            roc_auc[i + 1].append((fpr.tolist(), tpr.tolist()))
     return {
         "roc": roc_auc,
         "auc": auc_dic
     }
-
 
 
 # def auc_graph(scores):
@@ -129,15 +140,12 @@ if __name__ == "__main__":
     # cv = KFold(n_splits=10,random_state=42,shuffle=True)
     # z = cv.split(x,y)
     # print(z)
-    ret = cross_validation(x,y)
-    try:
-        with open("ruc_auc.json",'w') as results:
-            json.dump(ret,results)
-    except Exception as e:
-        print(e)
-    # show_roc_curve("/Users/itayd/PycharmProjects/logisticTree/ruc_auc.json")
-
-
-
+    # ret = cross_validation(x,y)
+    # try:
+    #     with open("ruc_auc.json",'w') as results:
+    #         json.dump(ret,results)
+    # except Exception as e:
+    #     print(e)
+    show_roc_curve("/Users/itayd/PycharmProjects/logisticTree/ruc_auc.json")
 
     # implement here the experiments for task 4
