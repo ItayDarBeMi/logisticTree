@@ -1,15 +1,13 @@
 import pandas as pd
 from pandas import DataFrame
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import numpy as np
 from Node import Node
-from sklearn.metrics import accuracy_score
 from LogisticModelTree import LogisticModelTree
-from sklearn.model_selection import cross_val_score, KFold
+from sklearn.model_selection import KFold
 import json
-from sklearn.metrics import roc_auc_score, auc, roc_curve
+from sklearn.metrics import auc, roc_curve
 from tqdm import tqdm
 
 CONF = {
@@ -99,7 +97,7 @@ def cross_validation(x, y):
     for i, conf in tqdm(enumerate(confs)):
         roc_auc[i + 1] = []
         auc_dic[i + 1] = []
-        clf = LogisticModelTree(min_leaf=conf["min_leaf"], max_depth=conf.get("max_depth"))
+        clf = LogisticModelTree()
         kf = KFold(n_splits=10, shuffle=True)
         folds = kf.split(x, y)
         for fold in tqdm(folds):
@@ -107,7 +105,7 @@ def cross_validation(x, y):
             y_train = y[fold[0]]
             x_test = x[fold[1]]
             y_test = y[fold[1]]
-            clf.fit(x_train, y_train.reset_index(drop=True))
+            clf.fit(x_train, y_train.reset_index(drop=True),min_leaf=conf["min_leaf"], max_depth=conf.get("max_depth"))
             y_pred = clf.predict(x_test)
             fpr, tpr, _ = roc_curve(y_test, y_pred)
             auc_dic[i + 1].append(auc(fpr, tpr))
@@ -140,12 +138,12 @@ if __name__ == "__main__":
     # cv = KFold(n_splits=10,random_state=42,shuffle=True)
     # z = cv.split(x,y)
     # print(z)
-    # ret = cross_validation(x,y)
+    ret = cross_validation(x,y)
     # try:
     #     with open("ruc_auc.json",'w') as results:
     #         json.dump(ret,results)
     # except Exception as e:
     #     print(e)
-    show_roc_curve("/Users/itayd/PycharmProjects/logisticTree/ruc_auc.json")
+    # show_roc_curve("/Users/itayd/PycharmProjects/logisticTree/ruc_auc.json")
 
     # implement here the experiments for task 4
