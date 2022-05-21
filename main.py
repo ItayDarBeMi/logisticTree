@@ -11,10 +11,10 @@ from sklearn.metrics import auc, roc_curve
 from tqdm import tqdm
 
 CONF = {
-        '1': {"min_leaf": 3, "max_depth": 3},
-        '2': {"min_leaf": 5, "max_depth": 5},
-        '3': {"min_leaf": 10, "max_depth": 10}
-        }
+    '1': {"min_leaf": 3, "max_depth": 3},
+    '2': {"min_leaf": 5, "max_depth": 5},
+    '3': {"min_leaf": 10, "max_depth": 10}
+}
 
 
 def analyze_data(data):
@@ -37,7 +37,7 @@ def plot_roc_curve_per_conf(roc, auc, conf):
     mean_fpr = np.mean([i[0] for i in roc[conf]], axis=0)
     mean_tpr = np.mean([i[1] for i in roc[conf]], axis=0)
     mean_auc = np.mean(auc[conf])
-    plt.plot(mean_fpr, mean_tpr, label=f"ROC Curve(area={round(mean_auc,5)})")
+    plt.plot(mean_fpr, mean_tpr, label=f"ROC Curve(area={round(mean_auc, 5)})")
     plt.plot([0, 1], [0, 1], "k--")
     plt.ylabel("True Positive Rate")
     plt.xlabel("False Positive Rate")
@@ -62,8 +62,24 @@ def get_pie_chart(df: DataFrame):
     true = df[df["target"] == 1].shape[0]
     false = df[df["target"] == 0].shape[0]
     plt.pie([true, false], autopct=lambda x: f"{round(x, 2)}%")
-    plt.legend(["1", "0"])
+    plt.legend(["True", "False"])
+    font1 = {'family': 'serif', 'color': 'black', 'size': 20}
+    plt.title("Target Distribution", fontdict=font1)
     plt.show()
+
+
+def get_feature_hist(df: DataFrame):
+    font1 = {'family': 'serif', 'color': 'black', 'size': 15}
+    for col in df:
+        plt.hist(df[col])
+        plt.title(col, fontdict=font1)
+        plt.show()
+
+
+def boxplot(df: DataFrame):
+    for column in df:
+        plt.figure()
+        df.boxplot([column], grid=False, rot=45, fontsize=15)
 
 
 def get_null_values(df: DataFrame):
@@ -72,12 +88,6 @@ def get_null_values(df: DataFrame):
 
 def get_numeric_stats(df: DataFrame):
     print(df.describe(include='all'))
-
-
-def get_feature_hist(df: DataFrame):
-    for col in df:
-        plt.hist(df[col])
-        plt.show()
 
 
 def traverse_tree(root: Node):
@@ -105,7 +115,7 @@ def cross_validation(x, y):
             y_train = y[fold[0]]
             x_test = x[fold[1]]
             y_test = y[fold[1]]
-            clf.fit(x_train, y_train.reset_index(drop=True),min_leaf=conf["min_leaf"], max_depth=conf.get("max_depth"))
+            clf.fit(x_train, y_train.reset_index(drop=True), min_leaf=conf["min_leaf"], max_depth=conf.get("max_depth"))
             y_pred = clf.predict(x_test)
             fpr, tpr, _ = roc_curve(y_test, y_pred)
             auc_dic[i + 1].append(auc(fpr, tpr))
@@ -114,36 +124,3 @@ def cross_validation(x, y):
         "roc": roc_auc,
         "auc": auc_dic
     }
-
-
-# def auc_graph(scores):
-#     from sklearn.metrics import roc_auc_score
-#     # auc scores
-#     auc_score = roc_auc_score(y_test, pred_prob1[:, 1])
-#     auc_score2 = roc_auc_score(y_test, pred_prob2[:, 1])
-#
-#     print(auc_score1, auc_score2)
-#     from sklearn.metrics import roc_curve
-
-if __name__ == "__main__":
-    data = pd.read_csv('heart.csv')
-    # analyze_data(data)
-    x, y = preprocess(data)
-    # X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
-    # root = Node(X_train, y_train.reset_index(drop=True))
-    # root.grow_tree()
-    # y_pred = root.predict(X_test)
-    # print(accuracy_score(y_test,y_pred))
-    # cross_validation(x,y)
-    # cv = KFold(n_splits=10,random_state=42,shuffle=True)
-    # z = cv.split(x,y)
-    # print(z)
-    ret = cross_validation(x,y)
-    # try:
-    #     with open("ruc_auc.json",'w') as results:
-    #         json.dump(ret,results)
-    # except Exception as e:
-    #     print(e)
-    # show_roc_curve("/Users/itayd/PycharmProjects/logisticTree/ruc_auc.json")
-
-    # implement here the experiments for task 4
